@@ -8,20 +8,18 @@
 
 using namespace std;
 
-// Abstract base class for text analysis
 class TextAnalyzer {
 protected:
     string text;
 public:
     TextAnalyzer(const string& t) : text(t) {}
-    virtual int analyze() = 0; // Pure virtual function
+    virtual int analyze() = 0; 
     virtual ~TextAnalyzer() = default;
-    
-    // Common utility function
+
     string getText() const { return text; }
 };
 
-// Derived class for counting letters
+
 class LetterCounter : public TextAnalyzer {
 public:
     LetterCounter(const string& t) : TextAnalyzer(t) {}
@@ -38,13 +36,12 @@ public:
     }
 };
 
-// Derived class for counting words
 class WordCounter : public TextAnalyzer {
 public:
     WordCounter(const string& t) : TextAnalyzer(t) {}
     
     int analyze() override {
-        int counter = 1; // Start with 1 for the first word
+        int counter = 1; 
         for (char c : text) {
             if (isspace(c) || c == '\n') {
                 counter++;
@@ -54,7 +51,7 @@ public:
     }
 };
 
-// Derived class for counting sentences
+
 class SentenceCounter : public TextAnalyzer {
 public:
     SentenceCounter(const string& t) : TextAnalyzer(t) {}
@@ -71,7 +68,6 @@ public:
     }
 };
 
-// Class to handle grade calculation
 class GradeCalculator {
 private:
     double letters;
@@ -102,7 +98,6 @@ public:
     }
 };
 
-// Class to handle file operations
 class FileHandler {
 public:
     static bool writeResult(const string& filename, const string& text, int grade) {
@@ -132,7 +127,7 @@ int main() {
     
     cout << "Would you like to (r)ead from file or (e)nter text directly? ";
     cin >> choice;
-    cin.ignore(); // Clear the newline
+    cin.ignore(); 
     
     try {
         if (choice == 'r' || choice == 'R') {
@@ -145,22 +140,18 @@ int main() {
             getline(cin, text);
         }
         
-        // Create analyzers using smart pointers
         vector<unique_ptr<TextAnalyzer>> analyzers;
         analyzers.push_back(make_unique<LetterCounter>(text));
         analyzers.push_back(make_unique<WordCounter>(text));
         analyzers.push_back(make_unique<SentenceCounter>(text));
         
-        // Analyze text using polymorphism
         int letters = analyzers[0]->analyze();
         int words = analyzers[1]->analyze();
         int sentences = analyzers[2]->analyze();
         
-        // Calculate and display grade
         GradeCalculator calc(letters, words, sentences);
         calc.printGrade();
         
-        // Save results to file
         cout << "Would you like to save the results? (y/n): ";
         cin >> choice;
         if (choice == 'y' || choice == 'Y') {
@@ -181,4 +172,5 @@ int main() {
     }
     
     return 0;
+
 }

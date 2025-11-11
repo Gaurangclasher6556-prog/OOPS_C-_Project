@@ -1,176 +1,194 @@
 #include <iostream>
-#include <string>
-#include <cctype>
-#include <cmath>
 #include <fstream>
-#include <vector>
-#include <memory>
-
+#include <string>
 using namespace std;
 
 class TextAnalyzer {
 protected:
     string text;
 public:
-    TextAnalyzer(const string& t) : text(t) {}
-    virtual int analyze() = 0; 
-    virtual ~TextAnalyzer() = default;
+    TextAnalyzer(string t) {
+        text = t;
+    }
 
-    string getText() const { return text; }
+    virtual int analyze() = 0; 
+    string getText() {
+        return text;
+    }
 };
+
 
 
 class LetterCounter : public TextAnalyzer {
 public:
-    LetterCounter(const string& t) : TextAnalyzer(t) {}
-    
-    int analyze() override {
-        int counter = 0;
-        for (char c : text) {
-            if (isalpha(c)) {
-                counter++;
+    LetterCounter(string t) : TextAnalyzer(t) {}
+
+    int analyze() {
+        int count = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (isalpha(text[i])) {
+                count++;
             }
         }
-        cout << "Number of letters: " << counter << endl;
-        return counter;
+        return count;
     }
 };
 
+
 class WordCounter : public TextAnalyzer {
 public:
-    WordCounter(const string& t) : TextAnalyzer(t) {}
-    
-    int analyze() override {
-        int counter = 1; 
-        for (char c : text) {
-            if (isspace(c) || c == '\n') {
-                counter++;
+    WordCounter(string t) : TextAnalyzer(t) {}
+
+    int analyze() {
+        int count = 0;
+        bool inWord = false;
+
+        for (int i = 0; i < text.length(); i++) {
+            if (isspace(text[i])) {
+                if (inWord) {
+                    count++;
+                    inWord = false;
+                }
+            } else {
+                inWord = true;
             }
         }
-        return counter;
+
+        if (inWord) count++; 
+        return count;
     }
 };
 
 
 class SentenceCounter : public TextAnalyzer {
 public:
-    SentenceCounter(const string& t) : TextAnalyzer(t) {}
-    
-    int analyze() override {
-        int counter = 0;
-        for (char c : text) {
-            if (c == '.' || c == '!' || c == '?') {
-                counter++;
+    SentenceCounter(string t) : TextAnalyzer(t) {}
+
+    int analyze() {
+        int count = 0;
+        for (int i = 0; i < text.length(); i++) {
+            if (text[i] == '.' || text[i] == '!' || text[i] == '?') {
+                count++;
             }
         }
-        cout << "Number of sentences: " << counter << endl;
-        return counter;
+        return count;
     }
 };
+
 
 class GradeCalculator {
 private:
-    double letters;
-    double words;
-    double sentences;
-
+    int letters, words, sentences;
 public:
-    GradeCalculator(int l, int w, int s) 
-        : letters(l), words(w), sentences(s) {}
-    
-    int calculateGrade() {
-        double L = (letters / words) * 100;
-        double S = (sentences / words) * 100;
-        return round(0.0588 * L - 0.296 * S - 15.8);
+    GradeCalculator(int l, int w, int s) {
+        letters = l;
+        words = w;
+        sentences = s;
     }
-    
+
+    int calculateGrade() {
+        float L = (float)letters / words * 100;
+        float S = (float)sentences / words * 100;
+        float index = 0.0588 * L - 0.296 * S - 15.8;
+        return (int)(index + 0.5); 
+    }
+
     void printGrade() {
-        int index = calculateGrade();
-        if (index > 16) {
+        int grade = calculateGrade();
+        if (grade > 16)
             cout << "Grade 16+" << endl;
-        }
-        else if (index < 1) {
+        else if (grade < 1)
             cout << "Before Grade 1" << endl;
-        }
-        else {
-            cout << "Grade " << index << endl;
-        }
+        else
+            cout << "Grade " << grade << endl;
     }
 };
+
 
 class FileHandler {
 public:
-    static bool writeResult(const string& filename, const string& text, int grade) {
-        ofstream file(filename);
-        if (!file) return false;
-        
-        file << "Text analyzed: " << text << endl;
-        file << "Grade level: " << grade << endl;
-        return true;
-    }
-    
-    static string readFile(const string& filename) {
-        ifstream file(filename);
-        if (!file) throw runtime_error("Unable to open file");
-        
-        string content, line;
-        while (getline(file, line)) {
+    string readFile(string filename) {
+        ifstream fin(filename);
+        string content = "", line;
+        if (!fin) {
+            cout << "Error: File not found!" << endl;
+            return "";
+        }
+
+        while (getline(fin, line)) {
             content += line + "\n";
         }
+        fin.close();
         return content;
     }
+
+    void writeResult(string filename, string text, int grade) {
+        ofstream fout(filename);
+        if (!fout) {
+            cout << "Error writing file!" << endl;
+            return;
+        }
+        fout << "Text analyzed:\n" << text << endl;
+        fout << "Grade level: " << grade << endl;
+        fout.close();
+        cout << "Results saved to " << filename << endl;
+    }
 };
+
 
 int main() {
     string text;
     char choice;
-    
-    cout << "Would you like to (r)ead from file or (e)nter text directly? ";
-    cin >> choice;
-    cin.ignore(); 
-    
-    try {
-        if (choice == 'r' || choice == 'R') {
-            string filename;
-            cout << "Enter filename to read: ";
-            getline(cin, filename);
-            text = FileHandler::readFile(filename);
-        } else {
-            cout << "Enter text: ";
-            getline(cin, text);
-        }
-        
-        vector<unique_ptr<TextAnalyzer>> analyzers;
-        analyzers.push_back(make_unique<LetterCounter>(text));
-        analyzers.push_back(make_unique<WordCounter>(text));
-        analyzers.push_back(make_unique<SentenceCounter>(text));
-        
-        int letters = analyzers[0]->analyze();
-        int words = analyzers[1]->analyze();
-        int sentences = analyzers[2]->analyze();
-        
-        GradeCalculator calc(letters, words, sentences);
-        calc.printGrade();
-        
-        cout << "Would you like to save the results? (y/n): ";
-        cin >> choice;
-        if (choice == 'y' || choice == 'Y') {
-            string outputFile;
-            cout << "Enter output filename: ";
-            cin.ignore();
-            getline(cin, outputFile);
-            if (FileHandler::writeResult(outputFile, text, calc.calculateGrade())) {
-                cout << "Results saved successfully!" << endl;
-            } else {
-                cout << "Error saving results." << endl;
-            }
-        }
-    }
-    catch (const exception& e) {
-        cerr << "Error: " << e.what() << endl;
-        return 1;
-    }
-    
-    return 0;
 
+    cout << "Do you want to read from file or enter text? (f/t): ";
+    cin >> choice;
+    cin.ignore();
+
+    FileHandler fh;
+
+    if (choice == 'f' || choice == 'F') {
+        string filename;
+        cout << "Enter filename: ";
+        getline(cin, filename);
+        text = fh.readFile(filename);
+        if (text == "") return 0;
+    } else {
+        cout << "Enter text: ";
+        getline(cin, text);
+    }
+
+    
+    TextAnalyzer* letter = new LetterCounter(text);
+    TextAnalyzer* word = new WordCounter(text);
+    TextAnalyzer* sentence = new SentenceCounter(text);
+
+    int letters = letter->analyze();
+    int words = word->analyze();
+    int sentences = sentence->analyze();
+
+    cout << "\nLetters: " << letters;
+    cout << "\nWords: " << words;
+    cout << "\nSentences: " << sentences << endl;
+
+    
+    GradeCalculator gc(letters, words, sentences);
+    gc.printGrade();
+
+    
+    cout << "Do you want to save the results? (y/n): ";
+    cin >> choice;
+    cin.ignore();
+
+    if (choice == 'y' || choice == 'Y') {
+        string outFile;
+        cout << "Enter output filename: ";
+        getline(cin, outFile);
+        fh.writeResult(outFile, text, gc.calculateGrade());
+    }
+    
+    delete letter;
+    delete word;
+    delete sentence;
+
+    return 0;
 }
